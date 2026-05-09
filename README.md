@@ -2,6 +2,8 @@
 
 [English version](./README.en.md)
 
+🔗 **公開ページ: <https://sato7f.github.io/apex-launch-option/>**
+
 Apex Legends の起動オプション (launch options) をチェックボックスで選んで生成・コピーできるシンプルな単一HTMLツールです。日本語と英語の表示切り替えに対応しています。
 
 選択内容と入力値はブラウザの `localStorage` に自動保存されるので、次回開いたときも同じ設定が復元されます。

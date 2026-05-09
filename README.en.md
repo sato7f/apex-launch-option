@@ -2,6 +2,8 @@
 
 [日本語版 README](./README.md)
 
+🔗 **Live demo: <https://sato7f.github.io/apex-launch-option/>**
+
 A simple, single-file HTML tool for picking Apex Legends launch options via checkboxes, then generating and copying the resulting command-line string. Supports both Japanese and English UI.
 
 Your selections and input values are automatically saved to the browser's `localStorage`, so your settings are restored the next time you open the tool.
