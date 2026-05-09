@@ -1,8 +1,13 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" style="color-scheme: dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1d24">
+<meta name="description" content="Apex Legends の起動オプション (launch options) を、チェックボックスで選んでコピペ用の文字列を生成するツール。Steam / EA アプリ用。">
+<meta property="og:title" content="Apex Legends 起動オプション ジェネレーター">
+<meta property="og:description" content="使うオプションにチェックを入れて、生成された文字列をコピー → Steam/EA アプリのプロパティに貼り付け。">
+<meta property="og:type" content="website">
 <title>Apex Legends 起動オプション ジェネレーター</title>
 <style>
   :root {
@@ -261,6 +266,8 @@
     color: #9bc3ee;
     text-decoration: none;
     margin-right: 6px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
   .option-sources a:hover { text-decoration: underline; }
   .option-sources a + a::before {
@@ -427,7 +434,17 @@
 
   /* ===== Responsive ===== */
   @media (max-width: 720px) {
-    header { padding: 18px 14px; }
+    header {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .lang-switch {
+      position: static;
+      align-self: flex-end;
+      margin-bottom: 8px;
+    }
     header h1 { font-size: 18px; }
     header p { font-size: 12px; }
     main { padding: 12px; }
@@ -475,16 +492,21 @@
       max-width: 100%;
       overflow-wrap: anywhere;
     }
+    .option-input {
+      order: 1;             /* フラグ直後 (チェックボックス→フラグ→値入力) に並ぶ */
+      width: 90px;
+    }
     .option-desc {
-      flex: 1 1 100%;     /* 説明を必ず改行して全幅 */
+      order: 2;
+      flex: 1 1 100%;       /* 説明は必ず改行して全幅 */
       font-size: 12.5px;
-      margin-left: 28px;  /* チェックボックスの幅ぶん字下げ */
+      margin-left: 28px;    /* チェックボックスの幅ぶん字下げ */
     }
     .option-toggle {
+      order: 3;
       margin-left: auto;
     }
     .option-detail { margin-left: 0; }
-    .option-input { width: 80px; }
 
     .references { padding: 14px; }
     .references li { font-size: 12.5px; word-break: break-all; }
