@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apex Legends 起動オプション ジェネレーター</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #1a1d24;
+    --panel-2: #232730;
+    --border: #2e333d;
+    --text: #e6e8eb;
+    --muted: #9aa1ad;
+    --accent: #ff4655;
+    --accent-hover: #e63946;
+    --ok: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1d24, #2a1518);
+    padding: 24px 20px;
+    border-bottom: 2px solid var(--accent);
+    position: relative;
+  }
+  .lang-switch {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    gap: 4px;
+    background: rgba(0,0,0,0.25);
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .lang-switch button {
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-switch button:hover { color: var(--text); }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  header h1 {
+    margin: 0 0 4px 0;
+    font-size: 22px;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .output-panel {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .output-panel label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .output-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  #output, #parse-input {
+    flex: 1;
+    background: #0a0c10;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 56px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #parse-input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  button {
+    background: var(--accent);
+    color: white;
+    border: 0;
+    padding: 0 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.secondary:hover { background: #2e333d; }
+  button.secondary[aria-expanded="true"] {
+    background: rgba(255, 70, 85, 0.12);
+    border-color: var(--accent);
+    color: #ffb3b8;
+  }
+  button.copied { background: var(--ok); }
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .stats {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+    align-self: center;
+  }
+  .category {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .category-header {
+    padding: 12px 16px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    user-select: none;
+  }
+  .category-header h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .category-header .chev {
+    margin-left: auto;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+  .category.collapsed .chev { transform: rotate(-90deg); }
+  .category.collapsed .options { display: none; }
+  .options {
+    padding: 4px 0;
+  }
+  .option {
+    padding: 6px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .option:last-child { border-bottom: 0; }
+  .option:hover { background: rgba(255,255,255,0.02); }
+  .option.matched { background: rgba(74, 222, 128, 0.07); }
+  .option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .option input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .option-flag {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 13.5px;
+    color: #ffb3b8;
+    background: rgba(255, 70, 85, 0.10);
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .option-desc {
+    font-size: 13px;
+    color: #c9cdd4;
+    line-height: 1.5;
+    flex: 1;
+    min-width: 0;
+  }
+  .option-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+  .option-toggle:hover { background: var(--panel-2); color: var(--text); }
+  .option-toggle::before {
+    content: var(--label-detail-open, "詳細 ▸");
+  }
+  .option.expanded .option-toggle::before {
+    content: var(--label-detail-close, "閉じる ▾");
+  }
+  .option-detail {
+    display: none;
+    margin-top: 6px;
+    margin-left: 27px;
+  }
+  .option.expanded .option-detail { display: block; }
+  .option-note {
+    font-size: 12.5px;
+    color: #ffd089;
+    background: rgba(255, 165, 0, 0.08);
+    border-left: 2px solid #ffb155;
+    padding: 5px 10px;
+    margin-top: 4px;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.5;
+  }
+  .option-note::before {
+    content: var(--label-note-prefix, "注意: ");
+    font-weight: 600;
+  }
+  .option-sources {
+    font-size: 12px;
+    color: #8a93a3;
+    margin-top: 5px;
+  }
+  .option-sources::before {
+    content: var(--label-sources-prefix, "出典: ");
+  }
+  .option-sources a {
+    color: #9bc3ee;
+    text-decoration: none;
+    margin-right: 6px;
+  }
+  .option-sources a:hover { text-decoration: underline; }
+  .option-sources a + a::before {
+    content: "/ ";
+    color: #6f7886;
+    text-decoration: none;
+  }
+  .parse-area {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .parse-area.open { display: block; }
+  .parse-area > label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .parse-feedback {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .parse-feedback.warn { border-color: #ffb155; color: #ffd089; }
+  .parse-feedback code {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+  .option-input {
+    background: #0a0c10;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .option-input:focus { outline: 1px solid var(--accent); }
+  .warn {
+    background: rgba(255, 70, 85, 0.08);
+    border: 1px solid rgba(255, 70, 85, 0.3);
+    color: #ffb3b8;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    scroll-margin-top: 220px;
+  }
+  .references {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 20px;
+    scroll-margin-top: 220px;
+  }
+  .references h2 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .references ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .references li {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .references li a {
+    color: #ffb3b8;
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .references li a:hover { text-decoration: underline; }
+  .references .ref-note {
+    color: var(--text);
+  }
+  .references .group-title {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+  .references .group-title:first-child { margin-top: 0; }
+  .howto {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+  }
+  .howto h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .howto ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .howto ol li { margin-bottom: 4px; }
+  .howto ol li:last-child { margin-bottom: 0; }
+  .howto-links {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .howto-links a {
+    color: #9bc3ee;
+    text-decoration: none;
+  }
+  .howto-links a:hover { text-decoration: underline; }
+  .notice {
+    background: rgba(255, 70, 85, 0.06);
+    border: 1px solid rgba(255, 70, 85, 0.35);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+    scroll-margin-top: 220px;
+  }
+  .notice h3 {
+    margin: 0 0 6px 0;
+    font-size: 14px;
+    color: #ffb3b8;
+  }
+  .notice code {
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px;
+  }
+  footer {
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  footer a { color: var(--muted); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 720px) {
+    header { padding: 18px 14px; }
+    header h1 { font-size: 18px; }
+    header p { font-size: 12px; }
+    main { padding: 12px; }
+
+    .output-panel {
+      padding: 12px;
+      position: static; /* 狭い画面では sticky を解除して縦の領域を奪わない */
+    }
+    .output-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .output-row button {
+      padding: 10px 14px;
+      width: 100%;
+    }
+    #output, #parse-input {
+      min-height: 64px;
+    }
+
+    .actions {
+      gap: 6px;
+    }
+    .actions .stats {
+      margin-left: 0;
+      width: 100%;
+      text-align: right;
+    }
+
+    .howto, .notice, .warn { padding: 12px 14px; font-size: 12.5px; }
+    .howto h3, .notice h3 { font-size: 13.5px; }
+
+    .category-header { padding: 10px 12px; }
+    .category-header h2 { font-size: 14px; }
+
+    .option { padding: 8px 10px; }
+    .option-row {
+      flex-wrap: wrap;
+      gap: 8px;
+      row-gap: 6px;
+    }
+    .option input[type="checkbox"] { width: 20px; height: 20px; }
+    .option-flag {
+      font-size: 12.5px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .option-desc {
+      flex: 1 1 100%;     /* 説明を必ず改行して全幅 */
+      font-size: 12.5px;
+      margin-left: 28px;  /* チェックボックスの幅ぶん字下げ */
+    }
+    .option-toggle {
+      margin-left: auto;
+    }
+    .option-detail { margin-left: 0; }
+    .option-input { width: 80px; }
+
+    .references { padding: 14px; }
+    .references li { font-size: 12.5px; word-break: break-all; }
+  }
+
+  @media (max-width: 420px) {
+    header h1 { font-size: 16px; }
+    .option-flag { font-size: 12px; }
+    .option-desc { font-size: 12px; }
+    .option-toggle { font-size: 10.5px; padding: 2px 6px; }
+  }
+
+  /* タッチデバイスではホバーの淡い背景を抑制 */
+  @media (hover: none) {
+    .option:hover { background: transparent; }
+    button.secondary:hover { background: var(--panel-2); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="lang-switch" role="group" aria-label="Language">
+    <button type="button" data-lang="ja">日本語</button>
+    <button type="button" data-lang="en">English</button>
+  </div>
+  <h1 data-i18n="title">Apex Legends 起動オプション ジェネレーター</h1>
+  <p data-i18n="subtitle">使うオプションにチェックを入れて、生成された文字列をコピー → Steam/Origin のプロパティに貼り付け</p>
+</header>
+
+<main>
+  <div class="output-panel">
+    <label data-i18n="output_label">生成された起動オプション (チェックに応じて自動生成)</label>
+    <div class="output-row">
+      <textarea id="output" readonly data-i18n-placeholder="output_placeholder" placeholder="チェックを入れると、ここに文字列が生成されます"></textarea>
+      <button id="copy-btn" data-i18n="copy_btn">コピー</button>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="reset-btn" data-i18n="reset_btn">全てクリア</button>
+      <button class="secondary" id="parse-btn" aria-expanded="false" data-i18n="parse_btn_closed">▸ 既存の文字列から読み込む</button>
+      <span class="stats" id="stats">0 / 0</span>
+    </div>
+    <div id="parse-area" class="parse-area">
+      <label data-i18n="parse_input_label">Steam / EA アプリの「起動オプション」欄の文字列を貼り付けてください</label>
+      <div class="output-row">
+        <textarea id="parse-input" data-i18n-placeholder="parse_input_placeholder" placeholder="例: -dev -high +fps_max 240 +mat_queue_mode 2"></textarea>
+        <button id="parse-apply-btn" data-i18n="parse_apply_btn">解析して反映</button>
+      </div>
+      <div id="parse-feedback"></div>
+    </div>
+  </div>
+
+  <div class="howto">
+    <h3 data-i18n="howto_title">使い方</h3>
+    <ol>
+      <li data-i18n="howto_step1">使いたいオプションにチェックを入れ、必要なら値を入力する</li>
+      <li data-i18n="howto_step2">上の出力欄に生成された文字列が出るので「コピー」ボタンを押す</li>
+      <li data-i18n-html="howto_step3">Steam: ライブラリで Apex を右クリック → プロパティ → 起動オプション欄に貼り付け<br>EA アプリ: ライブラリで Apex の「…」→ プロパティ → 詳細起動オプション欄に貼り付け</li>
+      <li data-i18n-html="howto_step4">すでに設定済みの文字列を読み込みたい場合は「<strong>▸ 既存の文字列から読み込む</strong>」を押して貼り付け</li>
+    </ol>
+    <div class="howto-links">
+      <a href="#notes" data-i18n="link_notes">注意書き</a> /
+      <a href="#about-graphics-convar" data-i18n="link_convar">r_* / mat_* 系コマンドが載っていない理由</a> /
+      <a href="#references" data-i18n="link_references">リファレンス</a>
+    </div>
+  </div>
+
+  <div id="categories"></div>
+
+  <section id="notes" class="warn" style="margin-top:24px;">
+    <strong data-i18n="notes_title">注意書き</strong><br>
+    <span data-i18n-html="notes_body">保存はブラウザの localStorage を使用しています。同じブラウザで再度開けば設定は自動的に復元されます。<br>
+    各オプションの説明・効果・推奨値は EA 公式ヘルプ・Valve Developer Wiki・PCGamingWiki・有志 Wiki / 解説記事に基づきます。Apex はアップデートで挙動が変わるオプションがあるため、出典記載のないオプションや「注意」付きのオプションは現バージョンで効くか各自で確認してください。</span>
+  </section>
+
+  <section id="about-graphics-convar" class="notice">
+    <h3 data-i18n-html="convar_title">グラフィック系 ConVar (<code>r_shadowrendertotexture</code> / <code>r_shadows</code> / <code>r_lod_switch_scale</code> / <code>mat_disable_bloom</code> など) について</h3>
+    <div data-i18n-html="convar_body">まず前提として、Apex の起動オプション欄は <code>+&lt;ConVar&gt; &lt;値&gt;</code> という書式を解釈する仕組みを持っており、チート保護されていない ConVar (本ツールが載せている <code>+fps_max</code>、<code>+cl_showpos</code>、<code>+cl_showfps</code>、<code>+m_rawinput</code>、<code>+mat_queue_mode</code> など) は <strong>起動オプション経由でも問題なく機能します</strong>。<br>
+    一方で、シャドウや LOD・テクスチャフィルタリング・ブルームなどを切り替える <code>r_*</code> / <code>mat_*</code> 系の <strong>一部 ConVar</strong> を起動オプションの欄に <code>+r_shadowrendertotexture 0</code> のように直接書いて使っている解説記事を見かけますが、これらは本来 <strong>autoexec.cfg に書く前提</strong>のコマンドで、起動オプションとして渡した場合に確実に効くという信頼できる検証情報は見つかっていません (Respawn 側でロード順や保護設定により実質ブロックされている疑い)。本ツールがこれらを「起動オプション」のチェック項目として載せていないのはこの理由です。<br>
+    使いたい場合は <code>&lt;Apex インストール先&gt;/cfg/autoexec.cfg</code> にコマンドを記述し、本ツールの「上級者向け」にある <code>+exec autoexec.cfg</code> を有効にして読み込ませてください。<br>
+    なお、EA は公式に「パフォーマンス調整は基本的にゲーム内オプションを使うのが望ましい」とコメントしており、autoexec の使用は競技シーン (ALGS など) では制限／非推奨となる場合があります。</div>
+  </section>
+
+  <section id="references" class="references">
+    <h2 data-i18n="ref_title">起動オプション リファレンス</h2>
+
+    <div class="group-title" data-i18n="ref_group_official">公式 / 一次情報</div>
+    <ul>
+      <li>
+        <span class="ref-note" data-i18n="ref_ea_ja">EA公式ヘルプ — Apex Legendsの起動オプション</span><br>
+        <a href="https://help.ea.com/ja/help/apex-legends/apex-legends/launch-options-for-apex-legends/" target="_blank" rel="noopener">https://help.ea.com/ja/help/apex-legends/apex-legends/launch-options-for-apex-legends/</a>
+      </li>
+      <li>
+        <span class="ref-note" data-i18n="ref_ea_en">EA Help (英語版)</span><br>
+        <a href="https://help.ea.com/en/help/apex-legends/apex-legends/launch-options-for-apex-legends/" target="_blank" rel="noopener">https://help.ea.com/en/help/apex-legends/apex-legends/launch-options-for-apex-legends/</a>
+      </li>
+    </ul>
+
+    <div class="group-title" data-i18n="ref_group_engine">エンジン共通 (Source Engine 由来のコマンド)</div>
+    <ul>
+      <li>
+        <span class="ref-note">Valve Developer Wiki — Command Line Options</span><br>
+        <a href="https://developer.valvesoftware.com/wiki/Command_Line_Options" target="_blank" rel="noopener">https://developer.valvesoftware.com/wiki/Command_Line_Options</a>
+        <br><span style="font-size:11px" data-i18n-html="ref_valve_note">※ Apex Legends は Source 派生エンジン。<code>-novid</code>, <code>-high</code>, <code>-fullscreen</code>, <code>+fps_max</code> などの起源</span>
+      </li>
+      <li>
+        <span class="ref-note">Valve Developer Wiki — List of Source Engine Commands</span><br>
+        <a href="https://developer.valvesoftware.com/wiki/List_of_Source_engine_commands" target="_blank" rel="noopener">https://developer.valvesoftware.com/wiki/List_of_Source_engine_commands</a>
+      </li>
+    </ul>
+
+    <div class="group-title" data-i18n="ref_group_community">コミュニティ / Wiki / 詳細解説</div>
+    <ul>
+      <li>
+        <span class="ref-note">PCGamingWiki — Apex Legends</span><br>
+        <a href="https://www.pcgamingwiki.com/wiki/Apex_Legends" target="_blank" rel="noopener">https://www.pcgamingwiki.com/wiki/Apex_Legends</a>
+        <br><span style="font-size:11px" data-i18n="ref_pcgw_note">※ 起動オプション・設定ファイル・既知の不具合などを網羅</span>
+      </li>
+      <li>
+        <span class="ref-note">Apex Movement Wiki — Launch commands</span><br>
+        <a href="https://apexmovement.tech/wiki/articles/Setup%20&%20Hardware%3ELaunch%20commands" target="_blank" rel="noopener">https://apexmovement.tech/wiki/articles/Setup &amp; Hardware&gt;Launch commands</a>
+      </li>
+      <li>
+        <span class="ref-note">ProSettings — Best Apex Legends Launch Commands</span><br>
+        <a href="https://prosettings.net/blog/best-apex-legends-launch-commands/" target="_blank" rel="noopener">https://prosettings.net/blog/best-apex-legends-launch-commands/</a>
+      </li>
+      <li>
+        <span class="ref-note" data-i18n="ref_steam_guide">Steam コミュニティガイド (Apex Legends 起動オプション)</span><br>
+        <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3358097760" target="_blank" rel="noopener">https://steamcommunity.com/sharedfiles/filedetails/?id=3358097760</a>
+      </li>
+    </ul>
+
+  </section>
+</main>
+
+<footer data-i18n="footer">
+  ブラウザで動作 / データはローカル保存のみ
+</footer>
+
+<script>
+const STORAGE_KEY = 'apex-launch-options-v1';
+const LANG_KEY = 'apex-launch-options-lang';
+
+// ===== i18n =====
+const I18N = {
+  ja: {
+    title: 'Apex Legends 起動オプション ジェネレーター',
+    subtitle: '使うオプションにチェックを入れて、生成された文字列をコピー → Steam/Origin のプロパティに貼り付け',
+    output_label: '生成された起動オプション (チェックに応じて自動生成)',
+    output_placeholder: 'チェックを入れると、ここに文字列が生成されます',
+    copy_btn: 'コピー',
+    copy_btn_done: 'コピーしました',
+    reset_btn: '全てクリア',
+    reset_confirm: '全ての選択と入力値をリセットします。よろしいですか？',
+    parse_btn_closed: '▸ 既存の文字列から読み込む',
+    parse_btn_open: '▾ 入力欄を閉じる',
+    parse_input_label: 'Steam / EA アプリの「起動オプション」欄の文字列を貼り付けてください',
+    parse_input_placeholder: '例: -dev -high +fps_max 240 +mat_queue_mode 2',
+    parse_apply_btn: '解析して反映',
+    stats: (sel, tot) => `${sel} / ${tot} 個 選択中`,
+    parse_matched: (n) => `<strong>${n}</strong> 個のオプションを認識して反映しました。`,
+    parse_unknown: '未知のトークン:',
+    detail_open: '詳細 ▸',
+    detail_close: '閉じる ▾',
+    note_prefix: '注意: ',
+    sources_prefix: '出典: ',
+    placeholder_value: '<値>',
+    howto_title: '使い方',
+    howto_step1: '使いたいオプションにチェックを入れ、必要なら値を入力する',
+    howto_step2: '上の出力欄に生成された文字列が出るので「コピー」ボタンを押す',
+    howto_step3: 'Steam: ライブラリで Apex を右クリック → プロパティ → 起動オプション欄に貼り付け<br>EA アプリ: ライブラリで Apex の「…」→ プロパティ → 詳細起動オプション欄に貼り付け',
+    howto_step4: 'すでに設定済みの文字列を読み込みたい場合は「<strong>▸ 既存の文字列から読み込む</strong>」を押して貼り付け',
+    link_notes: '注意書き',
+    link_convar: 'r_* / mat_* 系コマンドが載っていない理由',
+    link_references: 'リファレンス',
+    notes_title: '注意書き',
+    notes_body: '保存はブラウザの localStorage を使用しています。同じブラウザで再度開けば設定は自動的に復元されます。<br>各オプションの説明・効果・推奨値は EA 公式ヘルプ・Valve Developer Wiki・PCGamingWiki・有志 Wiki / 解説記事に基づきます。Apex はアップデートで挙動が変わるオプションがあるため、出典記載のないオプションや「注意」付きのオプションは現バージョンで効くか各自で確認してください。',
+    convar_title: 'グラフィック系 ConVar (<code>r_shadowrendertotexture</code> / <code>r_shadows</code> / <code>r_lod_switch_scale</code> / <code>mat_disable_bloom</code> など) について',
+    convar_body: 'まず前提として、Apex の起動オプション欄は <code>+&lt;ConVar&gt; &lt;値&gt;</code> という書式を解釈する仕組みを持っており、チート保護されていない ConVar (本ツールが載せている <code>+fps_max</code>、<code>+cl_showpos</code>、<code>+cl_showfps</code>、<code>+m_rawinput</code>、<code>+mat_queue_mode</code> など) は <strong>起動オプション経由でも問題なく機能します</strong>。<br>一方で、シャドウや LOD・テクスチャフィルタリング・ブルームなどを切り替える <code>r_*</code> / <code>mat_*</code> 系の <strong>一部 ConVar</strong> を起動オプションの欄に <code>+r_shadowrendertotexture 0</code> のように直接書いて使っている解説記事を見かけますが、これらは本来 <strong>autoexec.cfg に書く前提</strong>のコマンドで、起動オプションとして渡した場合に確実に効くという信頼できる検証情報は見つかっていません (Respawn 側でロード順や保護設定により実質ブロックされている疑い)。本ツールがこれらを「起動オプション」のチェック項目として載せていないのはこの理由です。<br>使いたい場合は <code>&lt;Apex インストール先&gt;/cfg/autoexec.cfg</code> にコマンドを記述し、本ツールの「上級者向け」にある <code>+exec autoexec.cfg</code> を有効にして読み込ませてください。<br>なお、EA は公式に「パフォーマンス調整は基本的にゲーム内オプションを使うのが望ましい」とコメントしており、autoexec の使用は競技シーン (ALGS など) では制限／非推奨となる場合があります。',
+    ref_title: '起動オプション リファレンス',
+    ref_group_official: '公式 / 一次情報',
+    ref_group_engine: 'エンジン共通 (Source Engine 由来のコマンド)',
+    ref_group_community: 'コミュニティ / Wiki / 詳細解説',
+    ref_ea_ja: 'EA公式ヘルプ — Apex Legendsの起動オプション',
+    ref_ea_en: 'EA Help (英語版)',
+    ref_valve_note: '※ Apex Legends は Source 派生エンジン。<code>-novid</code>, <code>-high</code>, <code>-fullscreen</code>, <code>+fps_max</code> などの起源',
+    ref_pcgw_note: '※ 起動オプション・設定ファイル・既知の不具合などを網羅',
+    ref_steam_guide: 'Steam コミュニティガイド (Apex Legends 起動オプション)',
+    footer: 'ブラウザで動作 / データはローカル保存のみ',
+  },
+  en: {
+    title: 'Apex Legends Launch Options Generator',
+    subtitle: 'Tick the options you want, copy the generated string, and paste it into the Steam / EA app properties.',
+    output_label: 'Generated launch options (auto-updated as you tick)',
+    output_placeholder: 'Tick options above and the resulting string will appear here.',
+    copy_btn: 'Copy',
+    copy_btn_done: 'Copied',
+    reset_btn: 'Clear all',
+    reset_confirm: 'This will reset all selections and values. Continue?',
+    parse_btn_closed: '▸ Load from an existing string',
+    parse_btn_open: '▾ Close input',
+    parse_input_label: 'Paste the contents of the Launch Options field from Steam / EA app',
+    parse_input_placeholder: 'e.g. -dev -high +fps_max 240 +mat_queue_mode 2',
+    parse_apply_btn: 'Parse & apply',
+    stats: (sel, tot) => `${sel} / ${tot} selected`,
+    parse_matched: (n) => `Recognized and applied <strong>${n}</strong> option${n === 1 ? '' : 's'}.`,
+    parse_unknown: 'Unknown tokens:',
+    detail_open: 'Details ▸',
+    detail_close: 'Close ▾',
+    note_prefix: 'Note: ',
+    sources_prefix: 'Sources: ',
+    placeholder_value: '<value>',
+    howto_title: 'How to use',
+    howto_step1: 'Tick the options you want and fill in values where needed.',
+    howto_step2: 'The generated string appears in the output box above — click "Copy".',
+    howto_step3: 'Steam: in your library, right-click Apex → Properties → paste into the Launch Options field.<br>EA app: in your library, click "..." on Apex → Properties → paste into the Advanced Launch Options field.',
+    howto_step4: 'To load an existing string, click <strong>▸ Load from an existing string</strong> and paste it in.',
+    link_notes: 'Notes',
+    link_convar: 'Why r_* / mat_* commands are not listed',
+    link_references: 'References',
+    notes_title: 'Notes',
+    notes_body: 'Settings are saved in the browser\'s localStorage and will be restored when you reopen the page in the same browser.<br>The descriptions, effects and recommended values for each option come from EA official help, the Valve Developer Wiki, PCGamingWiki, community wikis and write-ups. Apex sometimes changes how options behave between updates, so for options without listed sources or with a "Note", verify that they still work on the current build.',
+    convar_title: 'About graphics ConVars (<code>r_shadowrendertotexture</code> / <code>r_shadows</code> / <code>r_lod_switch_scale</code> / <code>mat_disable_bloom</code>, etc.)',
+    convar_body: 'First, some context: Apex\'s launch-options field does parse the <code>+&lt;ConVar&gt; &lt;value&gt;</code> form, and ConVars that are not cheat-protected (such as <code>+fps_max</code>, <code>+cl_showpos</code>, <code>+cl_showfps</code>, <code>+m_rawinput</code>, <code>+mat_queue_mode</code> — all of which this tool lists) <strong>do work when passed as launch options</strong>.<br>However, you will sometimes see guides write <strong>some</strong> <code>r_*</code> / <code>mat_*</code> ConVars (controlling shadows, LOD, texture filtering, bloom, etc.) directly as launch options like <code>+r_shadowrendertotexture 0</code>. Those commands are designed to be set from <strong>autoexec.cfg</strong>, and there is no reliable evidence that they take effect when passed as launch options on current builds (likely blocked by Respawn through load order or protection flags). That is why this tool does not list them as launch-option checkboxes.<br>If you want to use them, put the commands in <code>&lt;Apex install folder&gt;/cfg/autoexec.cfg</code> and enable <code>+exec autoexec.cfg</code> from the "Advanced" section of this tool.<br>Note also that EA has officially stated that "for performance config, it\'s usually best to stick to the in-game options where available", and use of autoexec may be restricted or discouraged in competitive contexts (e.g. ALGS).',
+    ref_title: 'Launch options references',
+    ref_group_official: 'Official / primary sources',
+    ref_group_engine: 'Source-engine inherited commands',
+    ref_group_community: 'Community / wikis / write-ups',
+    ref_ea_ja: 'EA Help (Japanese) — Launch options for Apex Legends',
+    ref_ea_en: 'EA Help (English)',
+    ref_valve_note: 'Apex Legends runs on a Source-derived engine. Origin of <code>-novid</code>, <code>-high</code>, <code>-fullscreen</code>, <code>+fps_max</code>, etc.',
+    ref_pcgw_note: 'Covers launch options, config files, known issues, and more.',
+    ref_steam_guide: 'Steam Community Guide — Apex Legends Launch Options',
+    footer: 'Runs entirely in your browser / data stored locally only',
+  },
+};
+
+let LANG = (() => {
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (saved === 'ja' || saved === 'en') return saved;
+  } catch (e) { /* ignore */ }
+  return (navigator.language || '').toLowerCase().startsWith('ja') ? 'ja' : 'en';
+})();
+
+function t(key, ...args) {
+  const v = I18N[LANG][key];
+  return typeof v === 'function' ? v(...args) : v;
+}
+
+function applyStaticI18n() {
+  document.documentElement.lang = LANG;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[LANG][key] !== undefined) el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    if (I18N[LANG][key] !== undefined) el.innerHTML = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (I18N[LANG][key] !== undefined) el.placeholder = t(key);
+  });
+  // パースボタンの開閉ラベルを現状に合わせる
+  const pb = document.getElementById('parse-btn');
+  if (pb) {
+    const open = pb.getAttribute('aria-expanded') === 'true';
+    pb.textContent = open ? t('parse_btn_open') : t('parse_btn_closed');
+  }
+  // 言語切り替えボタンのアクティブ表示
+  document.querySelectorAll('.lang-switch button').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === LANG);
+  });
+  // CSS の ::before に渡す擬似ラベル（クォート必須）
+  const root = document.documentElement;
+  root.style.setProperty('--label-detail-open', JSON.stringify(t('detail_open')));
+  root.style.setProperty('--label-detail-close', JSON.stringify(t('detail_close')));
+  root.style.setProperty('--label-note-prefix', JSON.stringify(t('note_prefix')));
+  root.style.setProperty('--label-sources-prefix', JSON.stringify(t('sources_prefix')));
+}
+
+function setLang(lang) {
+  if (lang !== 'ja' && lang !== 'en') return;
+  LANG = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* ignore */ }
+  applyStaticI18n();
+  render();
+}
+
+document.querySelectorAll('.lang-switch button').forEach(b => {
+  b.addEventListener('click', () => setLang(b.dataset.lang));
+});
+
+function pickLangText(obj, baseKey) {
+  // baseKey が 'desc' のとき、'desc_en' を優先（en時）して、なければ 'desc' にフォールバック
+  if (LANG === 'en') {
+    const enKey = baseKey + '_en';
+    if (obj[enKey]) return obj[enKey];
+  }
+  return obj[baseKey];
+}
+
+// オプション定義
+// type: 'flag' | 'value'  (value は input フィールドを伴う)
+// note: 注意事項・補足（任意）
+// sources: 出典の配列 [{ label, url }]
+const CATEGORIES = [
+  {
+    id: 'startup',
+    name: '起動 / イントロ',
+    name_en: 'Startup / Intro',
+    options: [
+      {
+        id: 'dev', flag: '-dev',
+        desc: 'デベロッパーモードを有効化。Apex では結果として EA / Respawn のイントロムービーがスキップされる。Source エンジン由来のオプション。',
+        desc_en: 'Enables developer mode. As a side-effect in Apex, the EA / Respawn intro movies are skipped. Inherited from the Source engine.',
+        note: '現在 Apex でイントロを確実にスキップする目的では -novid より -dev が有効、というのがコミュニティの一致した報告。',
+        note_en: 'For reliably skipping the intro in current Apex builds, the community consensus is that -dev works while -novid often does not.',
+        sources: [
+          { label: 'esports.gg — How to skip Apex Legends intro', url: 'https://esports.gg/news/apex-legends/how-to-skip-apex-legends-intro-remove-respawn-cinematic/' },
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'novid', flag: '-novid',
+        desc: 'Source エンジンの「イントロ動画スキップ」オプション。多くの Source 系タイトルではイントロをスキップする。',
+        desc_en: 'The classic Source-engine "skip intro videos" flag. It skips intros in most Source-based titles.',
+        note: 'Apex Legends では現在は機能しないという報告が多数。イントロを消したい場合は -dev を使う方が確実。',
+        note_en: 'Multiple reports say it no longer works in current Apex Legends. Use -dev if you want to actually skip the intro.',
+        sources: [
+          { label: 'esports.gg — How to skip Apex Legends intro', url: 'https://esports.gg/news/apex-legends/how-to-skip-apex-legends-intro-remove-respawn-cinematic/' },
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'fullscreen', flag: '-fullscreen',
+        desc: 'ゲームをフルスクリーンモードで起動する。Source エンジン共通オプション (-full と同義)。',
+        desc_en: 'Starts the game in fullscreen mode. Standard Source-engine option (synonym of -full).',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'windowed', flag: '-windowed',
+        desc: 'ゲームをウィンドウモードで起動する。Source エンジン共通オプション (-window と同義)。',
+        desc_en: 'Starts the game in windowed mode. Standard Source-engine option (synonym of -window).',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'borderless', flag: '-borderless',
+        desc: 'ボーダーレス（枠なし）ウィンドウで起動する。-windowed と併用するのが一般的。',
+        desc_en: 'Starts in a borderless (no-frame) window. Typically combined with -windowed.',
+        sources: [
+          { label: 'PCGamingWiki — Apex Legends', url: 'https://www.pcgamingwiki.com/wiki/Apex_Legends' },
+        ],
+      },
+      {
+        id: 'noborder', flag: '-noborder',
+        desc: 'ウィンドウモード時にウィンドウ枠（タイトルバー含む）を非表示にする。-windowed と併用してボーダーレス表示にする。',
+        desc_en: 'Hides the window frame (including title bar) in windowed mode. Combine with -windowed for a borderless look.',
+        note: 'EA 公式フォーラムの公式回答では「-noborder -windowed」がボーダーレスウィンドウのコマンド引数として案内されている。',
+        note_en: 'An official EA Forums response cites "-noborder -windowed" as the command-line arguments for borderless windowed mode.',
+        sources: [
+          { label: 'EA Forums — Borderless windowed mode argument', url: 'https://forums.ea.com/discussions/apex-legends-technical-issues-en/what-is-the-command-line-argument-for-borderless-windowed-mode/5187350/replies/5187353' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'performance',
+    name: 'パフォーマンス / FPS',
+    name_en: 'Performance / FPS',
+    options: [
+      {
+        id: 'high', flag: '-high',
+        desc: 'ゲームプロセスを Windows 上で「高優先度」で起動する。Source エンジン共通オプション。CPU 負荷の高い場面で他プロセスより優先的に CPU 時間を割り当てる。',
+        desc_en: 'Launches the game process at "High" priority on Windows. Standard Source-engine option. Gives the game CPU time over other processes when CPU is busy.',
+        note: '副作用として、入力デバイスや音声など他プロセスの応答性が下がることがある。常に有効にすることが推奨されているわけではない。',
+        note_en: 'Side effect: input devices and audio (other processes) may become less responsive. It is not universally recommended.',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+          { label: 'ProSettings — Best Apex Legends Launch Commands', url: 'https://prosettings.net/blog/best-apex-legends-launch-commands/' },
+        ],
+      },
+      {
+        id: 'forcenovsync', flag: '-forcenovsync',
+        desc: '垂直同期 (V-Sync) を強制的に無効化し、GPU とモニターの同期によるフレーム制限を外す。',
+        desc_en: 'Force-disables V-Sync, removing the frame limiter that syncs the GPU to the monitor.',
+        sources: [
+          { label: 'ProSettings — Best Apex Legends Launch Commands', url: 'https://prosettings.net/blog/best-apex-legends-launch-commands/' },
+        ],
+      },
+      {
+        id: 'fps_max', type: 'value', flag: '+fps_max', default: '0',
+        desc: 'フレームレートの上限を指定する。EA公式ヘルプで唯一具体的に紹介されている起動オプション。',
+        desc_en: 'Sets the FPS cap. The only launch option specifically documented in EA\'s official help.',
+        note: '0 = 無制限 / 1 = モニターのリフレッシュレートに合わせる / 任意の正の整数 = その値で上限。Apex 内部のデフォルトは 144。',
+        note_en: '0 = uncapped / 1 = match monitor refresh rate / any positive integer = use that value as the cap. Apex\'s internal default is 144.',
+        sources: [
+          { label: 'EA Help — Show, change, and cap FPS', url: 'https://help.ea.com/en/articles/apex-legends/change-and-cap-fps/' },
+          { label: 'ProSettings — Best Apex Legends Launch Commands', url: 'https://prosettings.net/blog/best-apex-legends-launch-commands/' },
+        ],
+      },
+      {
+        id: 'cl_forcepreload', flag: '+cl_forcepreload 1',
+        desc: 'マッチ開始前にテクスチャ・サウンドなどのアセットを先読みしてメモリに展開する。プレイ中の動的ロードによるカクつきを減らす意図のオプション。',
+        desc_en: 'Pre-loads textures, sounds and other assets into memory before a match. Aims to reduce in-game stutter caused by streaming assets.',
+        note: '環境によってはむしろスタッター（カクつき）の原因になる場合がある。挙動が悪化したら外す。',
+        note_en: 'On some setups it actually causes stutter rather than reducing it. Remove it if performance gets worse.',
+        sources: [
+          { label: 'ProSettings — Best Apex Legends Launch Commands', url: 'https://prosettings.net/blog/best-apex-legends-launch-commands/' },
+          { label: 'Steam Guide — Apex Legends Launch Options', url: 'https://steamcommunity.com/sharedfiles/filedetails/?id=3358097760' },
+        ],
+      },
+      {
+        id: 'mat_queue_mode', type: 'value', flag: '+mat_queue_mode', default: '2',
+        desc: 'マテリアル処理のスレッドモードを切り替える Source エンジンの ConVar。値: -1=システムデフォルト / 0=同期シングル / 1=キュー済みシングル / 2=キュー済みマルチスレッド。',
+        desc_en: 'Source-engine ConVar that switches the material-system threading mode. Values: -1 = system default / 0 = synchronous single-threaded / 1 = queued single-threaded / 2 = queued multi-threaded.',
+        note: '2 = マルチスレッドが現在の多コア CPU 環境では一般的に推奨される。マシンによっては不安定になる場合があり、その場合は -1 に戻す。',
+        note_en: '2 (multi-threaded) is commonly recommended on modern multi-core CPUs. If it causes instability, revert to -1.',
+        sources: [
+          { label: 'salvatorepolverino/Apex-Legends-Best-Configs autoexec.cfg', url: 'https://github.com/salvatorepolverino/Apex-Legends-Best-Configs-Ever-Made/blob/main/autoexec.cfg' },
+          { label: 'Steam Guide — Definitive Optimization Guide', url: 'https://steamcommunity.com/sharedfiles/filedetails/?id=2657008248' },
+        ],
+      },
+      {
+        id: 'nvn_lowlatency', flag: '+gfx_nvnUseLowLatency 1',
+        desc: 'NVIDIA Reflex Low Latency を有効化する Apex 固有のコマンド。GPU が NVIDIA 製で対応している場合、レンダーキューを短くして入力遅延を減らす。',
+        desc_en: 'Apex-specific command that enables NVIDIA Reflex Low Latency. On supported NVIDIA GPUs it shortens the render queue to reduce input lag.',
+        note: '1=有効 / 0=無効。基本的にゲーム内設定の「NVIDIA Reflex」と同等で、内部設定でも操作できる。',
+        note_en: '1 = on / 0 = off. Equivalent to the in-game "NVIDIA Reflex" setting; you can toggle it from in-game settings too.',
+        sources: [
+          { label: 'Dexerto — How to enable Nvidia Reflex in Apex Legends', url: 'https://www.dexerto.com/apex-legends/how-to-enable-nvidia-reflex-in-apex-legends-1431209/' },
+          { label: 'V3nilla/Apex-Legends-Config-And-Tweaks autoexec.cfg', url: 'https://github.com/V3nilla/Apex-Legends-Config-And-Tweaks/blob/main/autoexec.cfg' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'graphics',
+    name: '解像度 / アスペクト比',
+    name_en: 'Resolution / Aspect ratio',
+    options: [
+      {
+        id: 'width', type: 'value', flag: '-width', default: '1920',
+        desc: 'ウィンドウ／フルスクリーンの横方向解像度をピクセル単位で指定する。Source エンジン共通オプション (-w と同義)。',
+        desc_en: 'Sets the horizontal resolution (in pixels) for windowed or fullscreen mode. Standard Source-engine option (synonym of -w).',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'height', type: 'value', flag: '-height', default: '1080',
+        desc: 'ウィンドウ／フルスクリーンの縦方向解像度をピクセル単位で指定する。Source エンジン共通オプション (-h と同義)。',
+        desc_en: 'Sets the vertical resolution (in pixels) for windowed or fullscreen mode. Standard Source-engine option (synonym of -h).',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'refresh', type: 'value', flag: '-refresh', default: '240',
+        desc: 'フルスクリーン時に使用するモニターのリフレッシュレートを Hz で指定する。Source エンジン共通の -freq と同等。',
+        desc_en: 'Specifies the monitor refresh rate (in Hz) used in fullscreen mode. Equivalent to the Source-engine -freq option.',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'mat_letterbox', flag: '+mat_letterbox_aspect_min 1.0',
+        desc: '4:3 などワイドでないアスペクト比のとき、Apex がデフォルトで描画する黒帯（レターボックス）を除去するための最小アスペクト比設定。',
+        desc_en: 'Sets the minimum aspect ratio for letterboxing, used to remove the black bars Apex draws on non-widescreen aspect ratios such as 4:3.',
+        note: 'シーズンによっては Respawn 側で機能が制限／無効化されたことがあるため、現バージョンで効くかは要確認。-w / -h と組み合わせて 1440x1080 などのストレッチ解像度で使われる。',
+        note_en: 'Has been restricted/disabled by Respawn in past seasons, so verify it still works on the current build. Typically combined with -w / -h for stretched resolutions like 1440x1080.',
+        sources: [
+          { label: 'EA Answers HQ — mat_letterbox autoexec disabled', url: 'https://answers.ea.com/t5/Bug-Reports/quot-mat-letterbox-quot-autoexec-commands-disabled-can-t-play/td-p/8802889' },
+          { label: 'EA Forums — Letterboxing on 4:3 monitor', url: 'https://answers.ea.com/t5/Bug-Reports/Letterboxing-on-4-3-aspect-ratio-monitor/td-p/7434090' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'input',
+    name: '入力 / マウス',
+    name_en: 'Input / Mouse',
+    options: [
+      {
+        id: 'rawinput', flag: '+m_rawinput 1',
+        desc: 'マウス入力を OS の加速・スムージングを通さず、Raw Input API から直接取得する Source エンジンの ConVar。1 で有効、0 で無効（OSのカーソル位置経由）。',
+        desc_en: 'Source-engine ConVar that reads mouse input directly via the Raw Input API, bypassing OS acceleration / smoothing. 1 = on, 0 = off (use OS cursor deltas).',
+        note: '現在の Apex はゲーム内設定でも生入力が既定で有効になっている世代であり、明示指定は冗長な場合がある。',
+        note_en: 'Current Apex builds already enable raw input by default in the in-game settings, so explicitly setting this is often redundant.',
+        sources: [
+          { label: 'Overclock.net — Source Engine Mouse Settings', url: 'https://www.overclock.net/threads/source-engine-mouse-settings.1165112/' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'view',
+    name: '視野 / 表示情報',
+    name_en: 'View / HUD info',
+    options: [
+      {
+        id: 'fov', type: 'value', flag: '+cl_fovScale', default: '1.55',
+        desc: 'ゲーム内 FOV (視野角) のスケール倍率。基準 70 度に対する倍率で指定する。代表値: 1.00=70°, 1.27=90°, 1.55=110°, 1.70=120°。',
+        desc_en: 'Multiplier for the in-game FOV, scaled against a base of 70°. Common values: 1.00 = 70°, 1.27 = 90°, 1.55 = 110°, 1.70 = 120°.',
+        note: 'Apex のゲーム内 FOV スライダーは 70–110 の範囲で同等の調整が可能。120 度はゲーム内 UI からは設定できない値。',
+        note_en: "Apex's in-game FOV slider already covers 70–110°. 120° cannot be reached from the in-game UI.",
+        sources: [
+          { label: 'mouse-sensitivity.com — cl_fovscale forum', url: 'https://www.mouse-sensitivity.com/forums/topic/7334-possible-bug-apex-legends-cl_fovscale-does-not-match-the-fov-the-calculator-says-it-will-give/' },
+          { label: '240hz/ApexConfigs autoexec.cfg', url: 'https://github.com/240hz/ApexConfigs/blob/master/autoexec.cfg' },
+        ],
+      },
+      {
+        id: 'showpos', flag: '+cl_showpos 1',
+        desc: '画面左上にプレイヤーの座標 (XYZ)、視点角度、移動速度などのデバッグ情報を表示する Source エンジンの ConVar。',
+        desc_en: "Source-engine ConVar that prints the player's coordinates (XYZ), view angle and movement speed in the top-left corner.",
+        sources: [
+          { label: 'Valve Developer Wiki — cl_showpos / getpos', url: 'https://developer.valvesoftware.com/wiki/Cl_showpos' },
+        ],
+      },
+      {
+        id: 'showfps', flag: '+cl_showfps 4',
+        desc: '画面左上に FPS を表示する Source エンジンの ConVar。値の意味（Source/CS2 系）: 1=FPS / 2=スムーズ FPS と最低/最高+遅延 / 3=サーバー ms / 4=FPS 表示＋ログファイル出力。',
+        desc_en: 'Source-engine ConVar that shows FPS in the top-left corner. Values (Source/CS2 family): 1 = FPS / 2 = smoothed FPS plus min/max + latency / 3 = server ms / 4 = FPS display plus log to file.',
+        note: 'Apex で多くのガイドが 4 を指定しているが、単純に FPS が見たいだけなら 1 でも十分。',
+        note_en: 'Many Apex guides recommend 4, but 1 is enough if you just want to see your FPS.',
+        sources: [
+          { label: 'Valve Developer Wiki — cl_showfps', url: 'https://developer.valvesoftware.com/wiki/Cl_showfps' },
+        ],
+      },
+      {
+        id: 'reticle_color', type: 'value', flag: '+reticle_color', default: '"0 255 0"',
+        desc: 'レティクル（クロスヘア）の色を RGB の整数値 0–255 で指定する Apex 固有のコマンド。書式は "R G B" のダブルクォート付き。',
+        desc_en: 'Apex-specific command that sets the crosshair (reticle) color via RGB integers 0–255. Format is "R G B" wrapped in double quotes.',
+        note: 'PC 版限定（コンソール版は使用不可）。例: "0 255 255"=シアン, "255 0 255"=マゼンタ。',
+        note_en: 'PC only (not available on console). Examples: "0 255 255" = cyan, "255 0 255" = magenta.',
+        sources: [
+          { label: 'Charlie Intel — How to change reticle color', url: 'https://www.charlieintel.com/how-to-change-your-apex-legends-reticle-color-on-consoles-and-pc/153901/' },
+          { label: 'Dexerto — How to change reticle colors', url: 'https://www.dexerto.com/apex-legends/how-to-change-reticle-colors-in-apex-legends-1389750/' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'gameplay',
+    name: 'ゲームプレイ',
+    name_en: 'Gameplay',
+    options: [
+      {
+        id: 'crossplay', flag: '+CrossPlay_user_optin 0',
+        desc: 'クロスプレイのオプトイン状態を 0 (オフ) にする Apex 固有のコマンド。PC 版でクロスプレイ設定をいじる目的で過去に紹介された。',
+        desc_en: 'Apex-specific command that sets the crossplay opt-in state to 0 (off). Historically shared as a way to tweak crossplay on PC.',
+        note: '効果に争いがある（マッチング時のクロスプレイ完全遮断ではなく、招待関連の挙動だけ変わる等）うえ、フレンドリストや一部マッチングに副作用が出るとの報告もある。基本的にゲーム内のクロスプレイ設定で代替するのが安全。',
+        note_en: 'Its effect is disputed (some report it only changes invite behavior rather than fully blocking crossplay matchmaking) and players have reported side effects on friend lists and certain queues. Prefer the in-game crossplay setting.',
+        sources: [
+          { label: 'Dot Esports — How to turn off crossplay', url: 'https://dotesports.com/apex-legends/news/how-to-turn-off-crossplay-in-apex-legends' },
+          { label: 'Charlie Intel — How to turn off crossplay', url: 'https://www.charlieintel.com/how-to-turn-off-crossplay-in-apex-legends/74813/' },
+        ],
+      },
+      {
+        id: 'ragdoll', flag: '+cl_ragdoll_collide 0',
+        desc: 'ラグドール同士の衝突判定を無効にする Source エンジンの ConVar (デフォルト 0)。死体物理の処理を軽くする目的で使われる。',
+        desc_en: 'Source-engine ConVar that disables collision between ragdolls (default 0). Used to lighten corpse-physics processing.',
+        sources: [
+          { label: 'Valve Developer Wiki — cl_ragdoll_collide', url: 'https://developer.valvesoftware.com/wiki/Cl_ragdoll_collide' },
+        ],
+      },
+      {
+        id: 'softened', flag: '+cl_is_softened_locale 1',
+        desc: '一部地域向けの「規制ロケール表現」を有効化する Apex 固有フラグ。1 にするとキル時の血しぶきが赤いフラッシュ／光のエフェクトに置き換わり、視認性向上のために使う配信者・プロが多い。',
+        desc_en: 'Apex-specific flag that enables the "softened-locale" gore representation used in some regions. Setting it to 1 replaces blood splatter on kill with a red flash / light effect, often used by streamers and pros for clearer visuals.',
+        note: '0 が通常表現、1 が「ソフト化（赤フラッシュ）」表現。表記が逆の解説記事もあるので注意。',
+        note_en: '0 = normal representation, 1 = softened (red-flash) representation. Some guides describe these values reversed, so be careful.',
+        sources: [
+          { label: 'salvatorepolverino/Apex-Legends-Best-Configs README', url: 'https://github.com/salvatorepolverino/Apex-Legends-Best-Configs-Ever-Made/blob/main/README.md' },
+          { label: 'Apex Movement Wiki — Launch commands', url: 'https://apexmovement.tech/wiki/articles/Setup%20&%20Hardware%3ELaunch%20commands' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'advanced',
+    name: '上級者向け',
+    name_en: 'Advanced',
+    options: [
+      {
+        id: 'console', flag: '-console',
+        desc: 'デベロッパーコンソールを有効化する Source エンジン共通オプション。',
+        desc_en: 'Standard Source-engine option that enables the developer console.',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+        ],
+      },
+      {
+        id: 'language', type: 'value', flag: '-language', default: 'japanese',
+        desc: 'ゲーム言語を強制指定する Source エンジン共通オプション。値の例: japanese, english, korean など。',
+        desc_en: 'Standard Source-engine option that forces a specific game language. Example values: japanese, english, korean, etc.',
+        sources: [
+          { label: 'Valve Developer Wiki — Command Line Options', url: 'https://developer.valvesoftware.com/wiki/Command_Line_Options' },
+          { label: 'AFK Gaming — How to Change Language', url: 'https://afkgaming.com/esports/guide/how-to-change-language-in-apex-legends' },
+        ],
+      },
+      {
+        id: 'autoexec', flag: '+exec autoexec.cfg',
+        desc: '起動時に <Apex インストール先>/cfg/autoexec.cfg を実行する。複数の ConVar を一括設定するのに使う。',
+        desc_en: 'On startup, executes <Apex install folder>/cfg/autoexec.cfg. Used to apply multiple ConVars at once.',
+        note: 'EA アプリの「詳細起動オプション」では "+" を含む引数がエラー扱いとなり保存できない事例が報告されている。Steam では問題なく使える。',
+        note_en: 'There are reports that the EA app rejects arguments containing "+" in its Advanced Launch Options field. Steam accepts it without issues.',
+        sources: [
+          { label: 'EA Forums — autoexec config', url: 'https://forums.ea.com/discussions/apex-legends-technical-issues-en/cfg-file-and-auto-exec-nonexistent/5726975' },
+          { label: 'noxtgm/apex-legends-autoexec', url: 'https://github.com/noxtgm/apex-legends-autoexec' },
+        ],
+      },
+    ],
+  },
+];
+
+// State management
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* ignore */ }
+  return { checked: {}, values: {} };
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) { /* ignore */ }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+// Render
+const categoriesEl = document.getElementById('categories');
+const outputEl = document.getElementById('output');
+const statsEl = document.getElementById('stats');
+
+function render() {
+  categoriesEl.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const catEl = document.createElement('div');
+    catEl.className = 'category';
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    const catName = pickLangText(cat, 'name');
+    header.innerHTML = `<h2>${escapeHtml(catName)}</h2><span class="chev">▼</span>`;
+    header.addEventListener('click', () => catEl.classList.toggle('collapsed'));
+    catEl.appendChild(header);
+
+    const optsEl = document.createElement('div');
+    optsEl.className = 'options';
+    cat.options.forEach(opt => {
+      const optEl = document.createElement('div');
+      optEl.className = 'option';
+      optEl.dataset.optId = opt.id;
+
+      // 1行目: チェックボックス + フラグ + 説明 + (値入力) + 詳細トグル
+      const row = document.createElement('div');
+      row.className = 'option-row';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = 'opt-' + opt.id;
+      cb.checked = !!state.checked[opt.id];
+      cb.addEventListener('change', () => {
+        state.checked[opt.id] = cb.checked;
+        saveState();
+        updateOutput();
+      });
+      row.appendChild(cb);
+
+      const flagEl = document.createElement('label');
+      flagEl.className = 'option-flag';
+      flagEl.htmlFor = cb.id;
+      flagEl.textContent = opt.type === 'value' ? `${opt.flag} ${t('placeholder_value')}` : opt.flag;
+      row.appendChild(flagEl);
+
+      if (opt.type === 'value') {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'option-input';
+        inp.value = state.values[opt.id] ?? opt.default;
+        inp.addEventListener('input', () => {
+          state.values[opt.id] = inp.value;
+          saveState();
+          updateOutput();
+        });
+        row.appendChild(inp);
+      }
+
+      const descEl = document.createElement('label');
+      descEl.className = 'option-desc';
+      descEl.htmlFor = cb.id;
+      descEl.textContent = pickLangText(opt, 'desc');
+      row.appendChild(descEl);
+
+      const note = pickLangText(opt, 'note');
+      const hasDetail = !!(note || (opt.sources && opt.sources.length));
+      if (hasDetail) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'option-toggle';
+        toggle.addEventListener('click', () => optEl.classList.toggle('expanded'));
+        row.appendChild(toggle);
+      }
+
+      optEl.appendChild(row);
+
+      // 2行目（折り畳み）: 注意 + 出典
+      if (hasDetail) {
+        const detail = document.createElement('div');
+        detail.className = 'option-detail';
+        let html = '';
+        if (note) html += `<div class="option-note">${escapeHtml(note)}</div>`;
+        if (opt.sources && opt.sources.length) {
+          const links = opt.sources.map(s =>
+            `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.label)}</a>`
+          ).join('');
+          html += `<div class="option-sources">${links}</div>`;
+        }
+        detail.innerHTML = html;
+        optEl.appendChild(detail);
+      }
+
+      optsEl.appendChild(optEl);
+    });
+    catEl.appendChild(optsEl);
+    categoriesEl.appendChild(catEl);
+  });
+  updateOutput();
+}
+
+function updateOutput() {
+  const parts = [];
+  let total = 0;
+  let selected = 0;
+  CATEGORIES.forEach(cat => {
+    cat.options.forEach(opt => {
+      total++;
+      if (state.checked[opt.id]) {
+        selected++;
+        if (opt.type === 'value') {
+          const v = (state.values[opt.id] ?? opt.default).trim();
+          parts.push(`${opt.flag} ${v}`);
+        } else {
+          parts.push(opt.flag);
+        }
+      }
+    });
+  });
+  outputEl.value = parts.join(' ');
+  statsEl.textContent = t('stats', selected, total);
+}
+
+// Buttons
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('copy-btn');
+  const text = outputEl.value;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    outputEl.select();
+    document.execCommand('copy');
+  }
+  const orig = btn.textContent;
+  btn.textContent = t('copy_btn_done');
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.classList.remove('copied');
+  }, 1500);
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (!confirm(t('reset_confirm'))) return;
+  state = { checked: {}, values: {} };
+  saveState();
+  render();
+});
+
+// --- 解析機能 ---
+const parseArea = document.getElementById('parse-area');
+const parseInput = document.getElementById('parse-input');
+const parseFeedback = document.getElementById('parse-feedback');
+
+const parseBtn = document.getElementById('parse-btn');
+parseBtn.addEventListener('click', () => {
+  const opened = parseArea.classList.toggle('open');
+  parseBtn.setAttribute('aria-expanded', String(opened));
+  parseBtn.textContent = opened ? t('parse_btn_open') : t('parse_btn_closed');
+  if (opened) parseInput.focus();
+});
+
+// CATEGORIES から「フラグ識別子（例 -high, +fps_max）」→オプション定義のマップを作る
+function buildFlagIndex() {
+  const map = new Map(); // key: 識別子, value: { opt, takesValue: boolean }
+  CATEGORIES.forEach(cat => cat.options.forEach(opt => {
+    // フラグ文字列の最初のトークンが識別子（"+fps_max 0" → "+fps_max"）
+    const firstToken = opt.flag.trim().split(/\s+/)[0];
+    map.set(firstToken.toLowerCase(), {
+      opt,
+      takesValue: opt.type === 'value',
+      // value型の場合、デフォルトの flag 文字列に値が含まれているなら、ユーザー入力を優先
+    });
+    // フラグ型でも flag が複合（"+exec autoexec.cfg" や "+m_rawinput 1"）の場合、
+    // 入力側で「+exec autoexec.cfg」のような書き方も「+exec」識別子で拾えるように既に対応
+  }));
+  return map;
+}
+
+// 入力文字列をトークン化（クォートを尊重）
+function tokenize(input) {
+  const tokens = [];
+  const re = /"([^"]*)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(input)) !== null) {
+    tokens.push(m[1] !== undefined ? `"${m[1]}"` : m[2]);
+  }
+  return tokens;
+}
+
+function applyParsedOptions() {
+  const raw = parseInput.value.trim();
+  if (!raw) {
+    parseFeedback.innerHTML = '';
+    return;
+  }
+  const flagIndex = buildFlagIndex();
+  const tokens = tokenize(raw);
+
+  const newChecked = {};
+  const newValues = { ...state.values }; // value型のデフォルトは保持
+  const matched = []; // {opt, value}
+  const unknown = [];
+
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (!tok.startsWith('-') && !tok.startsWith('+')) {
+      // 識別子の前のトークンが値だけだった、または値だけ漂っているケース
+      unknown.push(tok);
+      continue;
+    }
+    const key = tok.toLowerCase();
+    const entry = flagIndex.get(key);
+    if (!entry) {
+      // CATEGORIES に存在しないオプション → 未知
+      // ただし、複合フラグの先頭マッチも試す（例: "+exec autoexec.cfg" が一語で来た場合は対応不要）
+      unknown.push(tok);
+      continue;
+    }
+    const { opt, takesValue } = entry;
+    if (takesValue) {
+      // 次のトークンを値として消費。ただし次が別フラグなら値なし
+      const next = tokens[i + 1];
+      if (next !== undefined && !next.startsWith('-') && !next.startsWith('+')) {
+        // クォート除去
+        const clean = next.startsWith('"') && next.endsWith('"') ? next : next;
+        newValues[opt.id] = clean;
+        i++;
+      }
+      // 値が無くてもチェックは入れる（デフォルト値で）
+    } else {
+      // フラグ型の中にも、定義側で「+m_rawinput 1」のようにスペース付きで定義されているものがある。
+      // ユーザーが「+m_rawinput 1」と書いた場合、次トークン "1" が余って unknown に入らないよう吸収する
+      const definitionRest = opt.flag.trim().split(/\s+/).slice(1).join(' ');
+      if (definitionRest) {
+        const next = tokens[i + 1];
+        if (next !== undefined && next === definitionRest) {
+          i++; // 値部分を消費
+        }
+      }
+    }
+    newChecked[opt.id] = true;
+    matched.push(opt);
+  }
+
+  state.checked = newChecked;
+  state.values = newValues;
+  saveState();
+  render();
+
+  // 一致したオプションを視覚ハイライト（数秒後にフェード）
+  matched.forEach(opt => {
+    const el = document.querySelector(`[data-opt-id="${opt.id}"]`);
+    if (el) {
+      el.classList.add('matched');
+      // 折り畳まれていたカテゴリは開く
+      const cat = el.closest('.category');
+      if (cat) cat.classList.remove('collapsed');
+    }
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.option.matched').forEach(el => el.classList.remove('matched'));
+  }, 4000);
+
+  // フィードバック
+  let fb = '';
+  fb += `<div>${t('parse_matched', matched.length)}</div>`;
+  if (unknown.length) {
+    fb += `<div style="margin-top:4px;">${escapeHtml(t('parse_unknown'))} ` +
+          unknown.map(u => `<code>${escapeHtml(u)}</code>`).join(' ') +
+          `</div>`;
+  }
+  parseFeedback.className = 'parse-feedback' + (unknown.length ? ' warn' : '');
+  parseFeedback.innerHTML = fb;
+}
+
+document.getElementById('parse-apply-btn').addEventListener('click', applyParsedOptions);
+parseInput.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') applyParsedOptions();
+});
+
+applyStaticI18n();
+render();
+</script>
+
+</body>
+</html>
